@@ -468,12 +468,12 @@ document.addEventListener("DOMContentLoaded", () => {
         : `<span class="event-type-badge ack"><i class="fa-solid fa-circle-check"></i> Acknowledged</span>`;
 
       tr.innerHTML = `
-        <td><strong><i class="fa-solid fa-triangle-exclamation icon-red"></i> ${log.type}</strong></td>
-        <td><code>${Number(log.lat).toFixed(4)}, ${Number(log.lng).toFixed(4)}</code></td>
-        <td>${log.dateTime}</td>
-        <td>${log.address}</td>
-        <td>${statusBadge}</td>
-        <td>
+        <td data-label="Event Type"><strong><i class="fa-solid fa-triangle-exclamation icon-red"></i> ${log.type}</strong></td>
+        <td data-label="Coordinates"><code>${Number(log.lat).toFixed(4)}, ${Number(log.lng).toFixed(4)}</code></td>
+        <td data-label="Date & Time">${log.dateTime}</td>
+        <td data-label="Location">${log.address}</td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions">
           <button class="glass-btn sm-btn btn-view-map" data-lat="${log.lat}" data-lng="${log.lng}">
             <i class="fa-solid fa-location-dot"></i> View Map
           </button>
