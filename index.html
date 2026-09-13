@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WalkWise Cane — Smart Monitoring Dashboard</title>
+  <meta name="description" content="Real-time monitoring dashboard for WalkWise Cane with OLED Glassmorphism aesthetic, PIN security lock, emergency alerts, and GPS map tracking.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for GPS Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Custom WalkWise OLED Gold Style -->
+  <link rel="stylesheet" href="walkwise_style.css">
+</head>
+<body>
+  <!-- Animated Fluid Ambient Light Spheres (Liquid Glass Backdrop) -->
+  <div class="fluid-ambient-container" aria-hidden="true">
+    <div class="fluid-blob fluid-blob-gold"></div>
+    <div class="fluid-blob fluid-blob-white"></div>
+    <div class="fluid-blob fluid-blob-amber"></div>
+  </div>
+
+  <!-- SVG Color Matrix Filter for #000000 OLED Black + #e5c163 Gold Map Rendering -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <filter id="oledGoldMapFilter" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="
+        0.33 0.33 0.33 0 0
+        0.33 0.33 0.33 0 0
+        0.33 0.33 0.33 0 0
+        0    0    0    1 0
+      "/>
+      <feComponentTransfer>
+        <feFuncR type="linear" slope="4.2" intercept="-1.0"/>
+        <feFuncG type="linear" slope="4.2" intercept="-1.0"/>
+        <feFuncB type="linear" slope="4.2" intercept="-1.0"/>
+      </feComponentTransfer>
+      <feColorMatrix type="matrix" values="
+        0.90  0.00  0.00  0  0
+        0.76  0.00  0.00  0  0
+        0.39  0.00  0.00  0  0
+        0.00  0.00  0.00  1  0
+      "/>
+    </filter>
+  </svg>
+
+  <!-- ========================================== -->
+  <!-- 1. INITIAL 4-PIN LOCK OVERLAY              -->
+  <!-- ========================================== -->
+  <div id="pinLockOverlay" class="pin-lock-overlay active">
+    <div class="glass-card pin-card">
+      <div class="pin-header">
+        <div class="app-icon-circle">
+          <i class="fa-solid fa-person-walking-with-cane"></i>
+        </div>
+        <h2>WalkWise Security</h2>
+        <p class="pin-subtitle">Enter 4-Digit Passcode to Unlock</p>
+      </div>
+
+      <!-- PIN Display Dots -->
+      <div class="pin-dots-container" id="pinDots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div class="pin-error-msg" id="pinErrorMsg">
+        <i class="fa-solid fa-circle-exclamation"></i> Incorrect Passcode
+      </div>
+
+      <!-- Numeric Keypad -->
+      <div class="keypad-grid">
+        <button class="keypad-btn" data-val="1">1</button>
+        <button class="keypad-btn" data-val="2">2</button>
+        <button class="keypad-btn" data-val="3">3</button>
+        <button class="keypad-btn" data-val="4">4</button>
+        <button class="keypad-btn" data-val="5">5</button>
+        <button class="keypad-btn" data-val="6">6</button>
+        <button class="keypad-btn" data-val="7">7</button>
+        <button class="keypad-btn" data-val="8">8</button>
+        <button class="keypad-btn" data-val="9">9</button>
+        <button class="keypad-btn action-btn" id="btnPinClear">Clear</button>
+        <button class="keypad-btn" data-val="0">0</button>
+        <button class="keypad-btn action-btn" id="btnPinDelete"><i class="fa-solid fa-backspace"></i></button>
+      </div>
+
+      <div class="pin-footer-hint">
+        <span class="badge-hint"><i class="fa-solid fa-key"></i> Default PIN: <strong>1234</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- UNIFIED ONE-CARD GLASS DASHBOARD           -->
+  <!-- ========================================== -->
+  <div id="dashboardApp" class="dashboard-wrapper locked">
+    
+    <!-- SINGLE ALL-IN-ONE UNIFIED GLASS CARD CONTAINER -->
+    <div class="glass-card unified-main-card">
+      
+      <!-- TOP NAVIGATION / HEADER -->
+      <header class="glass-header-inner">
+        <div class="header-brand">
+          <div class="brand-logo">
+            <i class="fa-solid fa-person-walking-with-cane"></i>
+          </div>
+          <div class="brand-text">
+            <h1>WalkWise Cane</h1>
+          </div>
+        </div>
+
+        <!-- Status Indicator: Green/Gray dot + Firebase Live -->
+        <div class="status-pill-group">
+          <div class="status-pill green-glow" id="firebaseStatusPill">
+            <span class="pulse-dot" id="firebaseDot"></span>
+            <span id="firebaseStatusText">Firebase Live</span>
+          </div>
+        </div>
+
+        <!-- Quick Action Controls -->
+        <div class="header-actions">
+          <button class="glass-btn emergency-trigger-btn" id="btnTriggerEmergencyTest" title="Simulate Emergency Alert">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Emergency Test</span>
+          </button>
+          <button class="glass-btn icon-only" id="btnAudioToggle" title="Toggle Sound Sirens">
+            <i class="fa-solid fa-volume-high" id="audioIcon"></i>
+          </button>
+          <button class="glass-btn icon-only" id="btnRelock" title="Lock Dashboard">
+            <i class="fa-solid fa-lock"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- GPS MAP SECTION -->
+      <section class="map-section-inner">
+        
+        <!-- HEADER ON TOP OF THE GPS MAP -->
+        <div class="map-section-header">
+          <div class="header-left">
+            <h2 class="map-headline">Monitor your Loved Ones.</h2>
+            <p class="map-subheadline">Live GPS location & motion telemetry from WalkWise Cane</p>
+          </div>
+          <div class="header-right">
+            <button class="glass-btn sm-btn" id="btnRecenterMap">
+              <i class="fa-solid fa-location-crosshairs"></i> Recenter
+            </button>
+          </div>
+        </div>
+
+        <!-- MAP CONTAINER -->
+        <div class="map-container-wrapper">
+          <div id="gpsMap" class="leaflet-map-frame"></div>
+
+          <!-- Glassmorphism Telemetry Floating Badge on Map -->
+          <div class="glass-card map-telemetry-badge">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Latitude</span>
+              <span class="telemetry-val" id="telemetryLat">12.4560° N</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Longitude</span>
+              <span class="telemetry-val" id="telemetryLng">13.5670° E</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Speed</span>
+              <span class="telemetry-val" id="telemetrySpeed">1.4 km/h</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Geofence</span>
+              <span class="telemetry-val text-green" id="telemetryZone"><i class="fa-solid fa-circle-check"></i> Safe Zone</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Last Signal</span>
+              <span class="telemetry-val" id="telemetryTime">Just Now</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOTTOM EMERGENCY HISTORY SECTION -->
+      <section class="history-section-inner">
+        <div class="history-header">
+          <div class="history-title-box">
+            <i class="fa-solid fa-clock-history"></i>
+            <div>
+              <h3>Emergency & Event History Log</h3>
+              <p class="section-subtext">Displays notifications recorded when the emergency button is pressed</p>
+            </div>
+          </div>
+          <div class="history-actions">
+            <button class="glass-btn sm-btn" id="btnClearHistory">
+              <i class="fa-solid fa-trash-can"></i> Clear History
+            </button>
+            <button class="glass-btn sm-btn" id="btnExportLogs">
+              <i class="fa-solid fa-file-export"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- History Log Table Container -->
+        <div class="history-table-wrapper">
+          <table class="glass-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>Event Type</th>
+                <th>Coordinates (Lat, Lng)</th>
+                <th>Date & Time</th>
+                <th>Location / Address</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Dynamically populated via JS -->
+            </tbody>
+          </table>
+
+          <!-- Empty History Fallback -->
+          <div class="empty-history" id="emptyHistoryMsg">
+            <i class="fa-solid fa-shield-cat"></i>
+            <p>No emergency events recorded yet. System is safe and monitoring.</p>
+            <span class="sub-hint">Click <strong>Emergency Test</strong> in the header to simulate an alert trigger.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER INSIDE CARD -->
+      <footer class="glass-footer">
+        <p>© 2026 WalkWise Cane Safety Technologies • Sealtiel PH</p>
+      </footer>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- EMERGENCY POP-UP OVERLAY MODAL             -->
+  <!-- ========================================== -->
+  <div id="emergencyOverlay" class="emergency-overlay">
+    <div class="glass-card emergency-modal">
+      
+      <div class="emergency-header">
+        <div class="emergency-siren-icon">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h2 class="emergency-title">EMERGENCY ALERT</h2>
+        <p class="emergency-subtitle">Cane Panic Button Pressed by User!</p>
+      </div>
+
+      <div class="emergency-details-card">
+        <div class="detail-row">
+          <span class="detail-label"><i class="fa-solid fa-user-clock"></i> Timestamp</span>
+          <span class="detail-val highlight" id="emergTime">Just Now</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label"><i class="fa-solid fa-location-dot"></i> Coordinates</span>
+          <span class="detail-val" id="emergCoords">12.4560° N, 13.5670° E</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label"><i class="fa-solid fa-map-pin"></i> Location Address</span>
+          <span class="detail-val" id="emergAddress">WalkWise Safe Zone Location</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label"><i class="fa-solid fa-battery-full"></i> Cane Battery</span>
+          <span class="detail-val highlight" id="emergBattery">88%</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="emergency-actions">
+        <a href="tel:911" class="glass-btn btn-danger-glow" id="btnCallCaregiver">
+          <i class="fa-solid fa-phone"></i> Call Emergency (911)
+        </a>
+        <button class="glass-btn btn-secondary-glass" id="btnDirections">
+          <i class="fa-solid fa-diamond-turn-right"></i> Open Directions
+        </button>
+        <button class="glass-btn btn-ack" id="btnDismissEmergency">
+          <i class="fa-solid fa-circle-check"></i> Acknowledge & Log Alert
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Firebase Standalone Compat SDKs (Works on file:// protocol & web servers without CORS issues) -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
+  <!-- WalkWise Firebase Configuration -->
+  <script src="firebase-config.js"></script>
+
+  <!-- WalkWise Main App Logic -->
+  <script src="walkwise_script.js"></script>
+</body>
+</html>
