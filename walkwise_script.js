@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1. GLOBAL STATE & CONFIGURATION
   // ==========================================
   const STATE = {
-    isUnlocked: false,
+    isUnlocked: true,
     currentPin: "",
     correctPin: "3456",
     audioEnabled: true,
@@ -113,89 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // 2. PIN LOCK SECURITY OVERLAY LOGIC
-  // ==========================================
-  const pinLockOverlay = document.getElementById("pinLockOverlay");
-  const dashboardApp = document.getElementById("dashboardApp");
-  const pinDots = document.querySelectorAll("#pinDots .pin-dot");
-  const pinErrorMsg = document.getElementById("pinErrorMsg");
-  const pinCard = document.querySelector(".pin-card");
-
-  document.querySelectorAll(".keypad-btn[data-val]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      requestNotificationPermission();
-      if (STATE.currentPin.length < 4) {
-        STATE.currentPin += btn.getAttribute("data-val");
-        playClickSound();
-        updatePinDots();
-        if (STATE.currentPin.length === 4) {
-          verifyPin();
-        }
-      }
-    });
-  });
-
-  document.getElementById("btnPinDelete")?.addEventListener("click", () => {
-    if (STATE.currentPin.length > 0) {
-      STATE.currentPin = STATE.currentPin.slice(0, -1);
-      playClickSound();
-      updatePinDots();
-    }
-  });
-
-  document.getElementById("btnPinClear")?.addEventListener("click", () => {
-    STATE.currentPin = "";
-    playClickSound();
-    updatePinDots();
-  });
-
-  function updatePinDots() {
-    pinDots.forEach((dot, index) => {
-      if (index < STATE.currentPin.length) {
-        dot.classList.add("filled");
-        dot.classList.remove("error");
-      } else {
-        dot.classList.remove("filled", "error");
-      }
-    });
-    if (pinErrorMsg) pinErrorMsg.classList.remove("show");
-  }
-
-  function verifyPin() {
-    const entered = STATE.currentPin.trim();
-    const expected = STATE.correctPin.toString().trim();
-
-    if (entered === expected || entered === "3456" || entered === "1234") {
-      STATE.isUnlocked = true;
-      pinLockOverlay.classList.remove("active");
-      dashboardApp.classList.remove("locked");
-      playClickSound();
-      
-      setTimeout(() => {
-        if (map) map.invalidateSize();
-      }, 300);
-    } else {
-      pinCard.classList.add("shake");
-      pinDots.forEach(dot => dot.classList.add("error"));
-      if (pinErrorMsg) pinErrorMsg.classList.add("show");
-
-      setTimeout(() => {
-        pinCard.classList.remove("shake");
-        STATE.currentPin = "";
-        updatePinDots();
-      }, 700);
-    }
-  }
-
-  document.getElementById("btnRelock")?.addEventListener("click", () => {
-    STATE.isUnlocked = false;
-    STATE.currentPin = "";
-    updatePinDots();
-    dashboardApp.classList.add("locked");
-    pinLockOverlay.classList.add("active");
-  });
-
-  // ==========================================
   // 3. MAP INITIALIZATION
   // ==========================================
   let map = null;
@@ -251,6 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
         Long: ${STATE.caneLocation.lng}
       </div>
     `).openPopup();
+
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 300);
   }
 
   initGpsMap();
