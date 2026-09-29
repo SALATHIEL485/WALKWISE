@@ -50,9 +50,54 @@
   </svg>
 
   <!-- ========================================== -->
+  <!-- 1. INITIAL 4-PIN LOCK OVERLAY              -->
+  <!-- ========================================== -->
+  <div id="pinLockOverlay" class="pin-lock-overlay active">
+    <div class="glass-card pin-card">
+      <div class="pin-header">
+        <div class="app-icon-circle">
+          <i class="fa-solid fa-person-walking-with-cane"></i>
+        </div>
+        <h2>WalkWise Security</h2>
+        <p class="pin-subtitle">Enter 4-Digit Passcode to Unlock</p>
+      </div>
+
+      <!-- PIN Display Dots -->
+      <div class="pin-dots-container" id="pinDots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div class="pin-error-msg" id="pinErrorMsg">
+        <i class="fa-solid fa-circle-exclamation"></i> Incorrect Passcode
+      </div>
+
+      <!-- Numeric Keypad -->
+      <div class="keypad-grid">
+        <button class="keypad-btn" data-val="1">1</button>
+        <button class="keypad-btn" data-val="2">2</button>
+        <button class="keypad-btn" data-val="3">3</button>
+        <button class="keypad-btn" data-val="4">4</button>
+        <button class="keypad-btn" data-val="5">5</button>
+        <button class="keypad-btn" data-val="6">6</button>
+        <button class="keypad-btn" data-val="7">7</button>
+        <button class="keypad-btn" data-val="8">8</button>
+        <button class="keypad-btn" data-val="9">9</button>
+        <button class="keypad-btn action-btn" id="btnPinClear">Clear</button>
+        <button class="keypad-btn" data-val="0">0</button>
+        <button class="keypad-btn action-btn" id="btnPinDelete"><i class="fa-solid fa-backspace"></i></button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- UNIFIED ONE-CARD GLASS DASHBOARD           -->
   <!-- ========================================== -->
-  <div id="dashboardApp" class="dashboard-wrapper">
+  <div id="dashboardApp" class="dashboard-wrapper locked">
     
     <!-- SINGLE ALL-IN-ONE UNIFIED GLASS CARD CONTAINER -->
     <div class="glass-card unified-main-card">
@@ -84,6 +129,9 @@
           </button>
           <button class="glass-btn icon-only" id="btnAudioToggle" title="Toggle Sound Sirens">
             <i class="fa-solid fa-volume-high" id="audioIcon"></i>
+          </button>
+          <button class="glass-btn icon-only" id="btnRelock" title="Lock Dashboard">
+            <i class="fa-solid fa-lock"></i>
           </button>
         </div>
       </header>
